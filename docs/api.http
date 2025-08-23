@@ -1,0 +1,54 @@
+### HTX Project API Collection
+
+### Health Check
+GET http://localhost:8000/api/v1/health
+
+### Database Health Check
+GET http://localhost:8000/api/v1/health/db
+
+### Full Health Check
+GET http://localhost:8000/api/v1/health/full
+
+### List Files
+GET http://localhost:8000/api/v1/files/list
+
+### Upload File
+POST http://localhost:8000/api/v1/files/upload
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="sample.xlsx"
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+< ./data/samples/969229.xlsx
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Get Trades
+GET http://localhost:8000/api/v1/trades?limit=10&offset=0
+
+### Get Trades Summary
+GET http://localhost:8000/api/v1/trades/summary
+
+### Get Deposits
+GET http://localhost:8000/api/v1/cashflow/deposits?limit=10&offset=0
+
+### Get Withdrawals
+GET http://localhost:8000/api/v1/cashflow/withdrawals?limit=10&offset=0
+
+### Get Transfers
+GET http://localhost:8000/api/v1/cashflow/transfers?limit=10&offset=0
+
+### Get Cashflow Summary
+GET http://localhost:8000/api/v1/cashflow/summary
+
+### Get PnL Summary
+GET http://localhost:8000/api/v1/pnl/summary
+
+### Get Daily PnL
+GET http://localhost:8000/api/v1/pnl/daily?limit=30
+
+### Get PnL by Symbol
+GET http://localhost:8000/api/v1/pnl/symbols
+
+### Get Drawdown Analysis
+GET http://localhost:8000/api/v1/pnl/drawdown

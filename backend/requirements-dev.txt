@@ -1,0 +1,7 @@
+-e .
+pytest
+pytest-asyncio
+httpx[http2]
+ruff
+black
+isort

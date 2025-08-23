@@ -1,0 +1,34 @@
+# HTX Project Configuration File
+# Copy this file and update with your actual API keys and settings
+
+# HTX Exchange API Configuration
+htx:
+  api_key: ""  # Your HTX API key
+  secret_key: ""  # Your HTX secret key
+  base_url: "https://api.huobi.pro"  # HTX API base URL
+
+# 3Commas Integration Configuration
+three_commas:
+  api_key: ""  # Your 3Commas API key
+  secret_key: ""  # Your 3Commas secret key
+
+# Data Configuration
+data:
+  directory: "data"  # Directory for CSV and Excel files
+  file_types: ["csv", "xlsx", "xls"]  # Supported file types
+
+# Analytics Configuration
+analytics:
+  default_currency: "USD"  # Default currency for calculations
+  timezone: "UTC"  # Timezone for date/time operations
+
+# Logging Configuration
+logging:
+  level: "INFO"  # Logging level (DEBUG, INFO, WARNING, ERROR)
+  file: "htx_project.log"  # Log file path
+
+# Export Configuration
+export:
+  default_format: "csv"  # Default export format
+  include_charts: true  # Include charts in reports
+  chart_format: "png"  # Chart image format
