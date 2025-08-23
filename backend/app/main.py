@@ -3,18 +3,18 @@ HTX Project - FastAPI Application
 Main entry point for the HTX trading analysis API
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 import logging
 from contextlib import asynccontextmanager
 
-from core.config import settings
-from core.logging import setup_logging
-from api.v1.endpoints import health, files, trades, cashflow, pnl
-from db.session import engine
-from db.init_db import init_db
+from app.core.config import settings
+from app.core.logging import setup_logging
+from app.api.v1.endpoints import health, files, trades, cashflow, pnl
+from app.db.session import engine
+from app.db.init_db import init_db
 
 # Setup logging
 setup_logging()

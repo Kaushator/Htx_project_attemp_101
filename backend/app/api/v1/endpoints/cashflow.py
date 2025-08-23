@@ -4,7 +4,8 @@ Cashflow endpoints (deposits, withdrawals, transfers)
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from db.session import get_db
+from app.db.session import get_db
+from app.services.db_service import cashflow_sums_by_currency
 from typing import Optional, List
 import logging
 
@@ -64,16 +65,16 @@ async def get_transfers(
 
 
 @router.get("/cashflow/summary")
-async def get_cashflow_summary(
-    currency: Optional[str] = Query(None, description="Filter by currency"),
-    db: AsyncSession = Depends(get_db)
-):
-    """Get cashflow summary statistics"""
-    # TODO: Implement cashflow summary
+async def get_cashflow_summary(db: AsyncSession = Depends(get_db)):
+    data = await cashflow_sums_by_currency(db)
+    total_deposits = sum(data["deposits"].values())
+    total_withdrawals = sum(data["withdrawals"].values())
+    net_cashflow = total_deposits - total_withdrawals
     return {
-        "total_deposits": 0,
-        "total_withdrawals": 0,
-        "total_transfers": 0,
-        "net_cashflow": 0,
-        "currencies": []
+        "by_currency": data,
+        "totals": {
+            "deposits": total_deposits,
+            "withdrawals": total_withdrawals,
+            "net_cashflow": net_cashflow,
+        },
     }
