@@ -14,6 +14,8 @@ if str(ROOT) not in sys.path:
 
 from app.core.config import settings
 from app.db.session import Base
+# IMPORT MODELS FOR AUTOGENERATE
+from app.models import trade, deposit, withdraw, transfer  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

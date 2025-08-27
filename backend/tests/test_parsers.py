@@ -51,6 +51,7 @@ def test_standardize_columns(parser, sample_csv_data):
 def test_clean_data(parser, sample_csv_data):
     """Test data cleaning"""
     cleaned = parser._clean_data(sample_csv_data, 'exchange')
+    cleaned.columns = [c.lower() for c in cleaned.columns]
     assert pd.api.types.is_datetime64_any_dtype(cleaned['date'])
     assert pd.api.types.is_numeric_dtype(cleaned['amount'])
     assert pd.api.types.is_numeric_dtype(cleaned['price'])

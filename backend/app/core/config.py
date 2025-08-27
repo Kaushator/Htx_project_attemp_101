@@ -3,9 +3,14 @@ Configuration settings for HTX Project
 Uses Pydantic Settings for environment variable management
 """
 
+
 from pydantic_settings import BaseSettings
 from typing import List, Optional
 import os
+from dotenv import load_dotenv
+from cryptography.fernet import Fernet
+
+load_dotenv()
 
 
 class Settings(BaseSettings):
@@ -31,10 +36,35 @@ class Settings(BaseSettings):
     DATABASE_ECHO: bool = False
     
     # HTX API settings
+    # Для хранения зашифрованных ключей используйте переменные окружения
     HTX_API_KEY: Optional[str] = None
     HTX_API_SECRET: Optional[str] = None
     HTX_SUBUID: Optional[str] = None
     HTX_BASE_URL: str = "https://api.huobi.pro"
+
+    # Ключ для шифрования (генерируйте и храните отдельно, не коммитьте в репозиторий)
+    ENCRYPTION_KEY: Optional[str] = os.getenv("ENCRYPTION_KEY")
+
+    def decrypt(self, value: Optional[str]) -> Optional[str]:
+        if not value or not self.ENCRYPTION_KEY:
+            return value
+        try:
+            f = Fernet(self.ENCRYPTION_KEY.encode())
+            return f.decrypt(value.encode()).decode()
+        except Exception:
+            return value
+
+    @property
+    def htx_api_key(self):
+        return self.decrypt(os.getenv("HTX_API_KEY", self.HTX_API_KEY))
+
+    @property
+    def htx_api_secret(self):
+        return self.decrypt(os.getenv("HTX_API_SECRET", self.HTX_API_SECRET))
+
+    @property
+    def htx_subuid(self):
+        return self.decrypt(os.getenv("HTX_SUBUID", self.HTX_SUBUID))
     
     # 3Commas API settings
     THREECOMMAS_API_KEY: Optional[str] = None

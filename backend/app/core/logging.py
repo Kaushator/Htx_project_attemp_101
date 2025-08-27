@@ -6,7 +6,7 @@ import logging
 import logging.handlers
 import sys
 from pathlib import Path
-from core.config import settings
+from app.core.config import settings
 
 
 def setup_logging():

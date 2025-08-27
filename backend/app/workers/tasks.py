@@ -5,9 +5,9 @@ Background tasks for HTX Project
 import logging
 from typing import Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.htx_client import HTXClient
-from services.threecommas import ThreeCommasIntegration
-from services.parser_csv import FileParser
+from app.services.htx_client import HTXClient
+from app.services.threecommas import ThreeCommasIntegration
+from app.services.parser_csv import FileParser
 
 logger = logging.getLogger(__name__)
 

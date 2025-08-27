@@ -80,3 +80,28 @@ async def cashflow_sums_by_currency(db: AsyncSession) -> Dict[str, Any]:
         "withdrawals": {c: float(a or 0) for c, a in wdr},
         "transfers": {c: float(a or 0) for c, a in trn},
     }
+
+
+# Bulk create methods
+async def create_deposits(db: AsyncSession, deposits: List[Dict[str, Any]]) -> int:
+    objs = [Deposit(**d) for d in deposits]
+    db.add_all(objs)
+    await db.flush()
+    await db.commit()
+    return len(objs)
+
+
+async def create_withdrawals(db: AsyncSession, withdrawals: List[Dict[str, Any]]) -> int:
+    objs = [Withdraw(**w) for w in withdrawals]
+    db.add_all(objs)
+    await db.flush()
+    await db.commit()
+    return len(objs)
+
+
+async def create_transfers(db: AsyncSession, transfers: List[Dict[str, Any]]) -> int:
+    objs = [Transfer(**t) for t in transfers]
+    db.add_all(objs)
+    await db.flush()
+    await db.commit()
+    return len(objs)

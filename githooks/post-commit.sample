@@ -1,0 +1,8 @@
+@echo off
+REM Git hook: post-commit (Windows)
+REM Location: .git\hooks\post-commit  (no extension)
+REM This script calls our Python logger to append the last commit message to the journal.
+
+for /f "delims=" %%i in ('git log -1 --pretty^=%%B') do set "MSG=%%i"
+REM Hooks dir is <repo>\.git\hooks → go two levels up to repo root
+python "%~dp0..\..\journal_roadmap\logger.py" --log "git commit" --result "%MSG%"

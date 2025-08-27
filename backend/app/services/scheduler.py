@@ -6,7 +6,7 @@ import logging
 from typing import Dict, Any
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from core.config import settings
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

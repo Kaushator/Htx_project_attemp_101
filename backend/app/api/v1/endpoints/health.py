@@ -4,7 +4,7 @@ Health check endpoints
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from db.session import get_db
+from app.db.session import get_db
 import logging
 
 logger = logging.getLogger(__name__)

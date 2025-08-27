@@ -10,6 +10,7 @@ from typing import Dict, List, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 import asyncio
+from app.services.db_service import create_trades, create_deposits, create_withdrawals, create_transfers
 
 logger = logging.getLogger(__name__)
 
@@ -130,32 +131,125 @@ class FileParser:
     def _clean_data(self, df: pd.DataFrame, sheet_type: str) -> pd.DataFrame:
         """Clean and validate data"""
         df_copy = df.copy()
-        
+        # Привести имена колонок к нижнему регистру
+        df_copy.columns = [c.lower() for c in df_copy.columns]
+
         # Convert date columns
         if 'date' in df_copy.columns:
             df_copy['date'] = pd.to_datetime(df_copy['date'], errors='coerce')
-        
+
         # Convert numeric columns
         numeric_columns = ['amount', 'price', 'fee', 'total']
         for col in numeric_columns:
             if col in df_copy.columns:
                 df_copy[col] = pd.to_numeric(df_copy[col], errors='coerce')
-        
+
         # Remove rows with invalid dates
         if 'date' in df_copy.columns:
             df_copy = df_copy.dropna(subset=['date'])
-        
+
         return df_copy
     
     async def save_to_database(self, data: Dict[str, pd.DataFrame], db: AsyncSession):
         """Save parsed data to database"""
-        # TODO: Implement database saving logic
-        # This will be implemented when models are created
         logger.info(f"Saving {len(data)} sheets to database")
         
+        total_saved = 0
         for sheet_name, df in data.items():
             logger.info(f"Processing sheet: {sheet_name} with {len(df)} rows")
-            # await self._save_sheet_to_db(sheet_name, df, db)
+            saved = await self._save_sheet_to_db(sheet_name, df, db)
+            total_saved += saved
+        
+        logger.info(f"Total saved: {total_saved} records")
+        return total_saved
+    
+    async def _save_sheet_to_db(self, sheet_name: str, df: pd.DataFrame, db: AsyncSession) -> int:
+        """Save individual sheet to database"""
+        if df.empty:
+            return 0
+        
+        # Determine sheet type
+        sheet_type = self._detect_sheet_type(df.columns)
+        if not sheet_type:
+            logger.warning(f"Unknown sheet type for {sheet_name}")
+            return 0
+        
+        try:
+            if sheet_type == 'exchange':
+                return await self._save_trades(df, db)
+            elif sheet_type == 'deposit':
+                return await self._save_deposits(df, db)
+            elif sheet_type == 'withdraw':
+                return await self._save_withdrawals(df, db)
+            elif sheet_type == 'transfer':
+                return await self._save_transfers(df, db)
+            else:
+                logger.warning(f"Unsupported sheet type: {sheet_type}")
+                return 0
+        except Exception as e:
+            logger.error(f"Failed to save {sheet_name}: {e}")
+            return 0
+    
+    async def _save_trades(self, df: pd.DataFrame, db: AsyncSession) -> int:
+        """Save trades to database"""
+        trades_data = []
+        for _, row in df.iterrows():
+            trade_data = {
+                'time': row.get('date'),
+                'symbol': row.get('symbol'),
+                'side': row.get('side'),
+                'quantity': float(row.get('amount', 0)),
+                'price': float(row.get('price', 0)),
+                'fee': float(row.get('fee', 0)),
+                'total': float(row.get('total', 0))
+            }
+            trades_data.append(trade_data)
+        
+        return await create_trades(db, trades_data)
+    
+    async def _save_deposits(self, df: pd.DataFrame, db: AsyncSession) -> int:
+        """Save deposits to database"""
+        deposits_data = []
+        for _, row in df.iterrows():
+            deposit_data = {
+                'time': row.get('date'),
+                'currency': row.get('currency'),
+                'amount': float(row.get('amount', 0)),
+                'txid': row.get('txid')
+            }
+            deposits_data.append(deposit_data)
+        
+        return await create_deposits(db, deposits_data)
+    
+    async def _save_withdrawals(self, df: pd.DataFrame, db: AsyncSession) -> int:
+        """Save withdrawals to database"""
+        withdrawals_data = []
+        for _, row in df.iterrows():
+            withdrawal_data = {
+                'time': row.get('date'),
+                'currency': row.get('currency'),
+                'amount': float(row.get('amount', 0)),
+                'fee': float(row.get('fee', 0)),
+                'txid': row.get('txid')
+            }
+            withdrawals_data.append(withdrawal_data)
+        
+        return await create_withdrawals(db, withdrawals_data)
+    
+    async def _save_transfers(self, df: pd.DataFrame, db: AsyncSession) -> int:
+        """Save transfers to database"""
+        transfers_data = []
+        for _, row in df.iterrows():
+            transfer_data = {
+                'time': row.get('date'),
+                'currency': row.get('currency'),
+                'amount': float(row.get('amount', 0)),
+                'from_account': row.get('from_account'),
+                'to_account': row.get('to_account')
+            }
+            transfers_data.append(transfer_data)
+        
+        return await create_transfers(db, transfers_data)
     
     def export_to_csv(self, data: Dict[str, pd.DataFrame], output_dir: str):
         """Export processed data to CSV files"""

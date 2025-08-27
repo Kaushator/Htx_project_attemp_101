@@ -3,7 +3,7 @@ HTX Project - FastAPI Application
 Main entry point for the HTX trading analysis API
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -92,8 +92,8 @@ async def root():
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
-        host=settings.API_HOST,
-        port=settings.API_PORT,
+    host=settings.API_HOST,
+    port=settings.API_PORT,
         reload=settings.DEBUG,
         log_level="info"
     )

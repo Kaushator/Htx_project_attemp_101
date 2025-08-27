@@ -1,0 +1,23 @@
+# Cursor Rules for Htx_project_attemp_101
+
+You are working in a Windows + WSL2 Python project.
+**Critical constraints**: minimize tokens, keep context tight, prefer small diffs.
+
+## Behavior
+- Prefer inline edits and single-file diffs.
+- When asked to run routine operations (push, env, logging), instruct to run VS Code Tasks instead of generating long commands.
+- Avoid loading unrelated files into context.
+- Always summarize plans in ≤5 bullets before multi-file edits.
+
+## Local Tasks (use instead of long instructions)
+- **Setup Env** → Run Task: `Setup Env (venv + requirements)`
+- **Git Push** → Run Task: `Git Push + Log` (prompts for message)
+- **Log Prompt/Result** → Run Task: `Log Task (journal)`
+
+## File Hygiene
+- Do not refactor beyond 30 changed lines unless explicitly asked.
+- Keep docstrings to one-liners.
+- Add tests minimally: happy path + 1 edge + 1 error.
+
+## Journaling
+- After significant changes, propose to log with: `Log Task (journal)` and a short result summary.

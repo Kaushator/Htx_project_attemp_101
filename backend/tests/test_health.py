@@ -2,37 +2,33 @@
 Tests for health endpoints
 """
 
-import pytest
-from httpx import AsyncClient
+from fastapi.testclient import TestClient
 from app.main import app
 
 
-@pytest.mark.asyncio
-async def test_health_check():
+def test_health_check():
     """Test basic health check"""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get("/api/v1/health")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "healthy"
+    client = TestClient(app)
+    resp = client.get("/api/v1/health")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data.get("status") == "healthy"
 
 
-@pytest.mark.asyncio
-async def test_database_health_check():
+def test_database_health_check():
     """Test database health check"""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get("/api/v1/health/db")
-        assert response.status_code == 200
-        data = response.json()
-        assert "database" in data
+    client = TestClient(app)
+    resp = client.get("/api/v1/health/db")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "database" in data
 
 
-@pytest.mark.asyncio
-async def test_full_health_check():
+def test_full_health_check():
     """Test full health check"""
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        response = await ac.get("/api/v1/health/full")
-        assert response.status_code == 200
-        data = response.json()
-        assert "checks" in data
-        assert "api" in data["checks"]
+    client = TestClient(app)
+    resp = client.get("/api/v1/health/full")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "checks" in data
+    assert "api" in data["checks"]

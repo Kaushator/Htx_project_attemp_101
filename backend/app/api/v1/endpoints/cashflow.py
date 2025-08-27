@@ -13,6 +13,32 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+
+# Явный обработчик для /cashflow (возвращает summary, как /cashflow/summary)
+@router.get("/cashflow")
+async def cashflow_root(db: AsyncSession = Depends(get_db)):
+    try:
+        data = await cashflow_sums_by_currency(db)
+        total_deposits = sum(data["deposits"].values())
+        total_withdrawals = sum(data["withdrawals"].values())
+        net_cashflow = total_deposits - total_withdrawals
+        return {
+            "by_currency": data,
+            "totals": {
+                "deposits": total_deposits,
+                "withdrawals": total_withdrawals,
+                "net_cashflow": net_cashflow,
+            },
+        }
+    except Exception as e:
+        logger.error(f"Failed to get cashflow summary: {e}")
+        return {
+            "by_currency": {},
+            "totals": {"deposits": 0, "withdrawals": 0, "net_cashflow": 0},
+            "error": str(e)
+        }
+
+
 @router.get("/cashflow/deposits")
 async def get_deposits(
     currency: Optional[str] = Query(None, description="Filter by currency"),
