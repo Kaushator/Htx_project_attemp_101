@@ -1,3 +1,6 @@
+import React, { useRef, useState } from 'react';
+import { Box, Typography, Button, CircularProgress, Alert } from '@mui/material';
+
 const FileUpload = ({ onUpload }) => {
   const fileInput = useRef();
   const [loading, setLoading] = useState(false);

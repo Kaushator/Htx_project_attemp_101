@@ -36,6 +36,5 @@ const Dashboard = () => {
     </Container>
   );
 };
-};
 
 export default Dashboard;
