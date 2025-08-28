@@ -9,6 +9,7 @@ async def init_db():
     async with engine.begin() as conn:
         # Import models to register metadata
         from app.models import trade, deposit, withdraw, transfer  # noqa: F401
+
         await conn.run_sync(Base.metadata.create_all)
 
 

@@ -8,16 +8,15 @@ from app.db.session import get_db
 from app.services.parser_csv import FileParser
 from app.core.config import settings
 import logging
-import os
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-
 # Импорт функции list_files ниже, чтобы алиас работал корректно
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from .files import list_files
 
@@ -32,11 +31,13 @@ async def files_root():
         files = []
         for file_path in upload_path.iterdir():
             if file_path.is_file():
-                files.append({
-                    "filename": file_path.name,
-                    "size": file_path.stat().st_size,
-                    "modified": file_path.stat().st_mtime
-                })
+                files.append(
+                    {
+                        "filename": file_path.name,
+                        "size": file_path.stat().st_size,
+                        "modified": file_path.stat().st_mtime,
+                    }
+                )
         return {"files": files}
     except Exception as e:
         logger.error(f"Failed to list files: {e}")
@@ -47,10 +48,10 @@ async def files_root():
 async def upload_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Upload and process CSV/XLSX file"""
-    
+
     # Validate file extension
     if not file.filename:
         raise HTTPException(status_code=400, detail="Filename is required")
@@ -58,9 +59,9 @@ async def upload_file(
     if file_ext not in settings.ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail=f"File type not allowed. Allowed types: {settings.ALLOWED_EXTENSIONS}"
+            detail=f"File type not allowed. Allowed types: {settings.ALLOWED_EXTENSIONS}",
         )
-    
+
     try:
         # Save file to upload directory
         upload_path = Path(settings.UPLOAD_DIR)
@@ -74,7 +75,7 @@ async def upload_file(
         if len(content) > settings.MAX_FILE_SIZE:
             raise HTTPException(
                 status_code=400,
-                detail=f"File too large. Maximum size: {settings.MAX_FILE_SIZE} bytes"
+                detail=f"File too large. Maximum size: {settings.MAX_FILE_SIZE} bytes",
             )
 
         with open(file_path, "wb") as f:
@@ -89,7 +90,7 @@ async def upload_file(
             "message": "File uploaded successfully",
             "filename": file.filename,
             "size": len(content),
-            "status": "processing"
+            "status": "processing",
         }
     except Exception as e:
         logger.error(f"File upload failed: {e}")
@@ -103,18 +104,20 @@ async def list_files():
         upload_path = Path(settings.UPLOAD_DIR)
         if not upload_path.exists():
             return {"files": []}
-        
+
         files = []
         for file_path in upload_path.iterdir():
             if file_path.is_file():
-                files.append({
-                    "filename": file_path.name,
-                    "size": file_path.stat().st_size,
-                    "modified": file_path.stat().st_mtime
-                })
-        
+                files.append(
+                    {
+                        "filename": file_path.name,
+                        "size": file_path.stat().st_size,
+                        "modified": file_path.stat().st_mtime,
+                    }
+                )
+
         return {"files": files}
-        
+
     except Exception as e:
         logger.error(f"Failed to list files: {e}")
         raise HTTPException(status_code=500, detail="Failed to list files")
@@ -125,15 +128,15 @@ async def delete_file(filename: str):
     """Delete uploaded file"""
     try:
         file_path = Path(settings.UPLOAD_DIR) / filename
-        
+
         if not file_path.exists():
             raise HTTPException(status_code=404, detail="File not found")
-        
+
         file_path.unlink()
         logger.info(f"File deleted: {filename}")
-        
+
         return {"message": "File deleted successfully"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -145,20 +148,20 @@ async def process_uploaded_file(file_path: str, db: AsyncSession):
     """Process uploaded file in background"""
     try:
         parser = FileParser()
-        
+
         # Parse file based on extension
-        if file_path.endswith('.csv'):
+        if file_path.endswith(".csv"):
             data = await parser.parse_csv_file(file_path)
-        elif file_path.endswith(('.xlsx', '.xls')):
+        elif file_path.endswith((".xlsx", ".xls")):
             data = await parser.parse_excel_file(file_path)
         else:
             logger.error(f"Unsupported file type: {file_path}")
             return
-        
+
         # Save to database
         await parser.save_to_database(data, db)
-        
+
         logger.info(f"File processed successfully: {file_path}")
-        
+
     except Exception as e:
         logger.error(f"File processing failed: {e}")

@@ -50,8 +50,8 @@ def main():
         description="Полный пуш проекта с проверками",
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    parser.add_argument("--repo-path", default=r"e:\Htx_project_attemp_101",
-                        help="Путь к репозиторию проекта (Windows).")
+    parser.add_argument("--repo-path", default="/home/runner/work/Htx_project_attemp_101/Htx_project_attemp_101",
+                        help="Path to the project repository (WSL/Linux).")
     parser.add_argument("--branch", default="main", help="График ветки для пуша.")
     parser.add_argument("--skip-tests", action="store_true", help="Пропустить pytest.")
     parser.add_argument("--skip-lint", action="store_true", help="Пропустить линтинг (black/flake8/mypy).")
