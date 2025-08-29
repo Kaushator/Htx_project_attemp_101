@@ -31,6 +31,7 @@ rich>=13.7
 # Uploads & pagination
 aiofiles>=24.1
 fastapi-pagination>=0.12
+python-multipart>=0.0.6
 
 # Scheduling (по желанию)
 APScheduler>=3.10
