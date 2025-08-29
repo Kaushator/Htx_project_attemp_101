@@ -100,7 +100,7 @@ class FileParser:
         # Add metadata
         df['source_file'] = Path(file_path).name
         df['sheet_name'] = sheet_name or 'main'
-        df['parsed_at'] = datetime.utcnow()
+        df['parsed_at'] = datetime.now(datetime.UTC)
         
         return df
     

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# filepath: e:\Htx_project_attemp_101\scripts\full_push.py
 """
 Полный пуш проекта в GitHub с защитой от утечки токенов.
-- выполняется в рамках указной директории репозитория
+- выполняется в рамках указанной директории репозитория
 - опционально прогоняет pytest и линтинг (black/flake8/mypy)
 - использует токен из GITHUB_TOKEN (для https-пуша)
+- поддерживает как Windows, так и Linux/WSL окружения
 """
 
 import argparse
@@ -47,10 +47,17 @@ def ensure_token_url(origin_url: str, token: str) -> str:
     return origin_url
 
 def get_python_bin(repo_path: Path) -> str:
-    # Находим python из .venv
-    venv = repo_path / ".venv" / "Scripts" / "python.exe"
-    if venv.exists():
-        return str(venv)
+    """Находим python из .venv с поддержкой Windows и Linux/WSL"""
+    # Windows
+    venv_win = repo_path / ".venv" / "Scripts" / "python.exe"
+    if venv_win.exists():
+        return str(venv_win)
+    
+    # Linux/WSL
+    venv_linux = repo_path / ".venv" / "bin" / "python"
+    if venv_linux.exists():
+        return str(venv_linux)
+    
     return "python"
 
 def main():
@@ -58,9 +65,9 @@ def main():
         description="Полный пуш проекта с проверками",
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    parser.add_argument("--repo-path", default=r"e:\\Htx_project_attemp_101",
-                        help="Путь к репозиторию проекта (Windows).")
-    parser.add_argument("--branch", default="main", help="График ветки для пуша.")
+    parser.add_argument("--repo-path", default=".",
+                        help="Путь к репозиторию проекта (по умолчанию текущая директория).")
+    parser.add_argument("--branch", default="main", help="Ветка для пуша.")
     parser.add_argument("--skip-tests", action="store_true", help="Пропустить pytest.")
     parser.add_argument("--skip-lint", action="store_true", help="Пропустить линтинг (black/flake8/mypy).")
     parser.add_argument("--dry-run", action="store_true", help="Пробный прогон без реального пуша.")
@@ -102,27 +109,46 @@ def main():
     if not args.dry_run:
         if not args.skip_tests:
             print("Запуск pytest...")
-            code, _, _ = run([python_bin, "-m", "pytest", "-q"], cwd=str(repo_path / "backend"))
-            if code != 0:
-                print("Tests провалились. Прерываю пуш.")
-                sys.exit(code)
+            backend_path = repo_path / "backend"
+            if backend_path.exists():
+                code, _, _ = run([python_bin, "-m", "pytest", "-q"], cwd=str(backend_path))
+                if code != 0:
+                    print("Tests провалились. Прерываю пуш.")
+                    sys.exit(code)
+            else:
+                print("Warning: директория backend не найдена, пропускаем тесты")
         if not args.skip_lint:
             print("Запуск линтинга (black/flake8/mypy)...")
+            lint_failures = []
+            
             # black
             code_black, _, _ = run([python_bin, "-m", "black", "--check", "."], cwd=str(repo_path), capture=True)
-            if code_black not in (0, 2):  # 2 = module not found
+            if code_black == 2:  # module not found
+                print("Warning: black не установлен, пропускаем проверку форматирования")
+            elif code_black != 0:
                 print("Black check failed")
-                # Не прерываем, если black не установлен
+                lint_failures.append("black")
+            
             # flake8
             code_flake, _, _ = run([python_bin, "-m", "flake8", "."], cwd=str(repo_path), capture=True)
-            if code_flake not in (0, 2):  # 2 = module not found
+            if code_flake == 2:  # module not found
+                print("Warning: flake8 не установлен, пропускаем проверку стиля")
+            elif code_flake != 0:
                 print("Flake8 check failed")
-                # Не прерываем, если flake8 не установлен
+                lint_failures.append("flake8")
+            
             # mypy
             code_mypy, _, _ = run([python_bin, "-m", "mypy", "."], cwd=str(repo_path), capture=True)
-            if code_mypy not in (0, 2):  # 2 = module not found
+            if code_mypy == 2:  # module not found
+                print("Warning: mypy не установлен, пропускаем проверку типов")
+            elif code_mypy != 0:
                 print("Mypy check failed")
-                # Не прерываем, если mypy не установлен
+                lint_failures.append("mypy")
+            
+            # Если какие-то проверки не прошли, прерываем
+            if lint_failures:
+                print(f"Линтинг/проверки не пройдены: {', '.join(lint_failures)}. Прерываю пуш.")
+                sys.exit(1)
 
     # 4) Коммит
     if has_changes(repo_path):

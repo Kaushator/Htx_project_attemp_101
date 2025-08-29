@@ -3,7 +3,7 @@ Base model for HTX Project
 Contains common fields and methods for all models
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 from sqlalchemy import Column, Integer, DateTime, String, Text
 from sqlalchemy.orm import declared_attr
 from db.session import Base
@@ -17,8 +17,8 @@ class BaseModel(Base):
     
     # Common fields
     id = Column(Integer, primary_key=True, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
     
     # Optional fields for tracking
     source = Column(String(50), nullable=True, comment="Data source (htx, 3commas, file, etc.)")
