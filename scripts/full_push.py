@@ -47,19 +47,26 @@ def ensure_token_url(origin_url: str, token: str) -> str:
     return origin_url
 
 def get_python_bin(repo_path: Path) -> str:
-    # Находим python из .venv
-    venv = repo_path / ".venv" / "Scripts" / "python.exe"
-    if venv.exists():
-        return str(venv)
-    return "python"
+    """Get Python executable from venv or system (WSL/Linux compatible)"""
+    # Try WSL/Linux venv first
+    venv_linux = repo_path / ".venv" / "bin" / "python"
+    if venv_linux.exists():
+        return str(venv_linux)
+    
+    # Fallback to Windows venv for compatibility
+    venv_windows = repo_path / ".venv" / "Scripts" / "python.exe"
+    if venv_windows.exists():
+        return str(venv_windows)
+    
+    return "python3"
 
 def main():
     parser = argparse.ArgumentParser(
         description="Полный пуш проекта с проверками",
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    parser.add_argument("--repo-path", default=r"e:\\Htx_project_attemp_101",
-                        help="Путь к репозиторию проекта (Windows).")
+    parser.add_argument("--repo-path", default="/home/runner/work/Htx_project_attemp_101/Htx_project_attemp_101",
+                        help="Path to the project repository (WSL/Linux).")
     parser.add_argument("--branch", default="main", help="График ветки для пуша.")
     parser.add_argument("--skip-tests", action="store_true", help="Пропустить pytest.")
     parser.add_argument("--skip-lint", action="store_true", help="Пропустить линтинг (black/flake8/mypy).")

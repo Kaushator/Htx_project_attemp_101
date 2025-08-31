@@ -18,7 +18,9 @@ def _to_decimal(v) -> Decimal:
     return Decimal(str(v)) if v is not None else Decimal("0")
 
 
-def _fifo_realized_pnl(trades: List[Trade]) -> Tuple[Decimal, Dict[str, Dict[str, Decimal]], Dict[date, Decimal]]:
+def _fifo_realized_pnl(
+    trades: List[Trade],
+) -> Tuple[Decimal, Dict[str, Dict[str, Decimal]], Dict[date, Decimal]]:
     positions: Dict[str, deque] = defaultdict(deque)
     realized = Decimal("0")
     daily: Dict[date, Decimal] = defaultdict(Decimal)
@@ -54,7 +56,9 @@ def _fifo_realized_pnl(trades: List[Trade]) -> Tuple[Decimal, Dict[str, Dict[str
     inventory: Dict[str, Dict[str, Decimal]] = {}
     for sym, lots in positions.items():
         pos_qty = sum(q for q, _ in lots)
-        avg_cost = (sum(q * p for q, p in lots) / pos_qty) if pos_qty != 0 else Decimal("0")
+        avg_cost = (
+            (sum(q * p for q, p in lots) / pos_qty) if pos_qty != 0 else Decimal("0")
+        )
         inventory[sym] = {
             "qty": pos_qty,
             "avg_cost": avg_cost,
@@ -116,7 +120,8 @@ async def pnl_daily(
 
     _, _, daily = _fifo_realized_pnl(rows)
     items = [
-        {"date": d.isoformat(), "realized_pnl": float(v)} for d, v in sorted(daily.items())
+        {"date": d.isoformat(), "realized_pnl": float(v)}
+        for d, v in sorted(daily.items())
     ]
     return items
 

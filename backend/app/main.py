@@ -3,7 +3,7 @@ HTX Project - FastAPI Application
 Main entry point for the HTX trading analysis API
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     # Startup
     logger.info("Starting HTX Project API...")
-    
+
     # Initialize database
     try:
         await init_db()
@@ -34,9 +34,9 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         raise
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down HTX Project API...")
     await engine.dispose()
@@ -49,7 +49,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Add CORS middleware
@@ -73,27 +73,20 @@ app.include_router(pnl.router, prefix="/api/v1", tags=["pnl"])
 async def global_exception_handler(request, exc):
     """Global exception handler"""
     logger.error(f"Unhandled exception: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error"}
-    )
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {
-        "message": "HTX Trading Analysis API",
-        "version": "1.0.0",
-        "docs": "/docs"
-    }
+    return {"message": "HTX Trading Analysis API", "version": "1.0.0", "docs": "/docs"}
 
 
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
-    host=settings.API_HOST,
-    port=settings.API_PORT,
+        host=settings.API_HOST,
+        port=settings.API_PORT,
         reload=settings.DEBUG,
-        log_level="info"
+        log_level="info",
     )

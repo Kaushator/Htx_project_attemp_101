@@ -27,7 +27,7 @@ async def get_trades(
     end_date: Optional[date] = Query(None),
     limit: int = Query(100, le=1000, description="Number of trades to return"),
     offset: int = Query(0, ge=0, description="Number of trades to skip"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     rows, total = await db_service.get_trades(
         db,
@@ -65,7 +65,7 @@ async def get_trades_summary(
     symbol: Optional[str] = Query(None, description="Filter by trading symbol"),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     return await db_service.trades_summary(
         db,

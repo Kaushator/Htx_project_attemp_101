@@ -41,7 +41,11 @@ async def get_trades(
         stmt = stmt.where(Trade.time <= end)
         cnt = cnt.where(Trade.time <= end)
     total = (await db.execute(cnt)).scalar_one()
-    rows = (await db.execute(stmt.order_by(desc(Trade.time)).limit(limit).offset(offset))).scalars().all()
+    rows = (
+        (await db.execute(stmt.order_by(desc(Trade.time)).limit(limit).offset(offset)))
+        .scalars()
+        .all()
+    )
     return rows, total
 
 
@@ -72,9 +76,27 @@ async def trades_summary(
 
 # Cashflow summaries
 async def cashflow_sums_by_currency(db: AsyncSession) -> Dict[str, Any]:
-    dep = (await db.execute(select(Deposit.currency, func.sum(Deposit.amount)).group_by(Deposit.currency))).all()
-    wdr = (await db.execute(select(Withdraw.currency, func.sum(Withdraw.amount)).group_by(Withdraw.currency))).all()
-    trn = (await db.execute(select(Transfer.currency, func.sum(Transfer.amount)).group_by(Transfer.currency))).all()
+    dep = (
+        await db.execute(
+            select(Deposit.currency, func.sum(Deposit.amount)).group_by(
+                Deposit.currency
+            )
+        )
+    ).all()
+    wdr = (
+        await db.execute(
+            select(Withdraw.currency, func.sum(Withdraw.amount)).group_by(
+                Withdraw.currency
+            )
+        )
+    ).all()
+    trn = (
+        await db.execute(
+            select(Transfer.currency, func.sum(Transfer.amount)).group_by(
+                Transfer.currency
+            )
+        )
+    ).all()
     return {
         "deposits": {c: float(a or 0) for c, a in dep},
         "withdrawals": {c: float(a or 0) for c, a in wdr},
@@ -91,7 +113,9 @@ async def create_deposits(db: AsyncSession, deposits: List[Dict[str, Any]]) -> i
     return len(objs)
 
 
-async def create_withdrawals(db: AsyncSession, withdrawals: List[Dict[str, Any]]) -> int:
+async def create_withdrawals(
+    db: AsyncSession, withdrawals: List[Dict[str, Any]]
+) -> int:
     objs = [Withdraw(**w) for w in withdrawals]
     db.add_all(objs)
     await db.flush()
