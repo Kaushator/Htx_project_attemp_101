@@ -124,7 +124,12 @@ async def list_files():
 async def delete_file(filename: str):
     """Delete uploaded file"""
     try:
-        file_path = Path(settings.UPLOAD_DIR) / filename
+        upload_path = Path(settings.UPLOAD_DIR).resolve()
+        file_path = (upload_path / filename).resolve()
+        
+        # Ensure that the resolved file_path is within the upload directory
+        if upload_path not in file_path.parents and upload_path != file_path.parent:
+            raise HTTPException(status_code=400, detail="Invalid file path.")
         
         if not file_path.exists():
             raise HTTPException(status_code=404, detail="File not found")
