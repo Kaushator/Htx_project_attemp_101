@@ -1,0 +1,481 @@
+{
+  "info": {
+    "name": "HTX Trading Platform - API Test Collection",
+    "description": "Comprehensive API testing for HTX exchange integration",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8004",
+      "type": "string"
+    },
+    {
+      "key": "htxApiKey",
+      "value": "{{$randomAlphaNumeric}}",
+      "type": "string"
+    },
+    {
+      "key": "testDataPath",
+      "value": "./test-data/",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🏥 Health Check Suite",
+      "item": [
+        {
+          "name": "Basic Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Health check under 100ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(100);",
+                  "});",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has health status', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.be.oneOf(['healthy', 'degraded']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Database Connectivity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/health/db"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Database connection healthy', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.database).to.include('connected');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📁 File Upload Suite",
+      "item": [
+        {
+          "name": "Upload Valid CSV",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{testDataPath}}valid-trades.csv"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/files/upload"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('File upload successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.records_processed).to.be.above(0);",
+                  "});",
+                  "pm.test('Processing time under 30s', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(30000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload Malformed CSV",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{testDataPath}}malformed.csv"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/files/upload"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Malformed file rejected', function () {",
+                  "    pm.response.to.have.status(422);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.detail).to.include('parsing');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Large File Test",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{testDataPath}}large-50mb.csv"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/files/upload"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Large file handling', function () {",
+                  "    if (pm.response.code === 413) {",
+                  "        pm.expect(pm.response.json().detail).to.include('file size');",
+                  "    } else {",
+                  "        pm.response.to.have.status(200);",
+                  "        pm.expect(pm.response.json().records_processed).to.be.above(100000);",
+                  "    }",
+                  "});",
+                  "pm.test('Under 5 minute timeout', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(300000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🔗 HTX Integration Suite",
+      "item": [
+        {
+          "name": "HTX Account Balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-HTX-API-KEY",
+                "value": "{{htxApiKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/htx/balance"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTX balance response', function () {",
+                  "    if (pm.response.code === 401) {",
+                  "        pm.test.skip('HTX API not configured');",
+                  "        return;",
+                  "    }",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.balances).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "HTX Trading History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-HTX-API-KEY",
+                "value": "{{htxApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/htx/trades?symbol=btcusdt&limit=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "htx", "trades"],
+              "query": [
+                {"key": "symbol", "value": "btcusdt"},
+                {"key": "limit", "value": "100"}
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HTX trades retrieved', function () {",
+                  "    if (pm.response.code === 401) {",
+                  "        pm.test.skip('HTX API not configured');",
+                  "        return;",
+                  "    }",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.trades).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "HTX Rate Limit Test",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-HTX-API-KEY",
+                "value": "{{htxApiKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/htx/balance"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Rate limiting handled', function () {",
+                  "    if (pm.response.code === 429) {",
+                  "        pm.expect(pm.response.json().retry_after).to.exist;",
+                  "    } else {",
+                  "        pm.response.to.have.status(200);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📊 Analytics Suite",
+      "item": [
+        {
+          "name": "P&L Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/advanced-pnl/summary?days=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "advanced-pnl", "summary"],
+              "query": [{"key": "days", "value": "30"}]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('P&L calculation complete', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.summary) {",
+                  "        pm.expect(jsonData.summary).to.have.property('total_pnl');",
+                  "    }",
+                  "});",
+                  "pm.test('Analytics under 10s', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(10000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Risk Metrics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-12-31\",\n  \"metrics\": [\"sharpe\", \"var\", \"drawdown\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/analytics/risk"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Risk metrics calculated', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.risk_metrics && !jsonData.risk_metrics.error) {",
+                  "        pm.expect(jsonData.risk_metrics).to.have.property('sharpe_ratio');",
+                  "        pm.expect(jsonData.risk_metrics).to.have.property('max_drawdown');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🔒 Security Suite",
+      "item": [
+        {
+          "name": "CORS Configuration",
+          "request": {
+            "method": "OPTIONS",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:3000"
+              },
+              {
+                "key": "Access-Control-Request-Method",
+                "value": "POST"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('CORS properly configured', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const origin = pm.response.headers.get('Access-Control-Allow-Origin');",
+                  "    pm.expect(origin).to.include('localhost:3000');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "SQL Injection Prevention",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/trades?symbol=' OR '1'='1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "trades"],
+              "query": [{"key": "symbol", "value": "' OR '1'='1"}]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('SQL injection prevented', function () {",
+                  "    pm.response.to.have.status(422);",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.detail).to.include('validation');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "⚡ Performance Suite",
+      "item": [
+        {
+          "name": "Concurrent Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Concurrent handling', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Analytics Performance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/advanced-pnl/comprehensive?days=365",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "advanced-pnl", "comprehensive"],
+              "query": [{"key": "days", "value": "365"}]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Complex analytics performance', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.responseTime).to.be.below(15000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

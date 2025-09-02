@@ -1,0 +1,776 @@
+# Google Cloud Platform (GCP) Integration Guide
+# HTX Trading Platform - Complete Setup and API Documentation
+
+## 📋 Table of Contents
+1. [Prerequisites](#prerequisites)
+2. [GCP Project Setup](#gcp-project-setup)
+3. [Service Account Configuration](#service-account-configuration)
+4. [Environment Configuration](#environment-configuration)
+5. [Service-Specific Setup](#service-specific-setup)
+6. [API Documentation](#api-documentation)
+7. [Testing and Validation](#testing-and-validation)
+8. [Performance Optimization](#performance-optimization)
+9. [Troubleshooting](#troubleshooting)
+10. [Security Best Practices](#security-best-practices)
+
+---
+
+## 🔧 Prerequisites
+
+### Required Tools
+- Google Cloud SDK (`gcloud` CLI)
+- Python 3.12+
+- Docker (optional, for containerized deployment)
+- Git
+
+### Required GCP APIs
+Enable the following APIs in your GCP project:
+```bash
+gcloud services enable storage.googleapis.com
+gcloud services enable pubsub.googleapis.com
+gcloud services enable secretmanager.googleapis.com
+gcloud services enable aiplatform.googleapis.com
+gcloud services enable cloudscheduler.googleapis.com
+gcloud services enable bigquery.googleapis.com
+gcloud services enable dataflow.googleapis.com
+gcloud services enable logging.googleapis.com
+```
+
+---
+
+## 🏗️ GCP Project Setup
+
+### 1. Create GCP Project
+```bash
+# Set your project ID
+export PROJECT_ID="htx-trading-platform"
+
+# Create new project
+gcloud projects create $PROJECT_ID
+
+# Set as default project
+gcloud config set project $PROJECT_ID
+
+# Link billing account (required for most services)
+gcloud billing projects link $PROJECT_ID --billing-account=YOUR_BILLING_ACCOUNT_ID
+```
+
+### 2. Enable Required APIs
+```bash
+# Enable all required APIs at once
+gcloud services enable \
+  storage.googleapis.com \
+  pubsub.googleapis.com \
+  secretmanager.googleapis.com \
+  aiplatform.googleapis.com \
+  cloudscheduler.googleapis.com \
+  bigquery.googleapis.com \
+  dataflow.googleapis.com \
+  logging.googleapis.com
+```
+
+---
+
+## 🔐 Service Account Configuration
+
+### 1. Create Service Account
+```bash
+# Create service account
+gcloud iam service-accounts create htx-trading-sa \
+  --display-name="HTX Trading Platform Service Account" \
+  --description="Service account for HTX trading platform GCP integration"
+
+# Get service account email
+export SA_EMAIL="htx-trading-sa@${PROJECT_ID}.iam.gserviceaccount.com"
+```
+
+### 2. Assign IAM Roles
+```bash
+# Storage Admin (for Cloud Storage operations)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$SA_EMAIL" \
+  --role="roles/storage.admin"
+
+# Pub/Sub Editor (for topic and subscription management)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$SA_EMAIL" \
+  --role="roles/pubsub.editor"
+
+# Secret Manager Admin (for secret management)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$SA_EMAIL" \
+  --role="roles/secretmanager.admin"
+
+# Vertex AI User (for ML operations)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$SA_EMAIL" \
+  --role="roles/aiplatform.user"
+
+# Cloud Scheduler Admin (for job management)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$SA_EMAIL" \
+  --role="roles/cloudscheduler.admin"
+
+# BigQuery Data Editor (for data warehouse operations)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$SA_EMAIL" \
+  --role="roles/bigquery.dataEditor"
+
+# Logging Writer (for application logs)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$SA_EMAIL" \
+  --role="roles/logging.logWriter"
+```
+
+### 3. Generate Service Account Key
+```bash
+# Create and download service account key
+gcloud iam service-accounts keys create ~/htx-trading-sa-key.json \
+  --iam-account=$SA_EMAIL
+
+# Store key securely (example path)
+mkdir -p ~/.config/gcp
+mv ~/htx-trading-sa-key.json ~/.config/gcp/
+chmod 600 ~/.config/gcp/htx-trading-sa-key.json
+```
+
+---
+
+## ⚙️ Environment Configuration
+
+### 1. Update `.env` File
+Create or update your `.env` file with GCP configuration:
+
+```bash
+# GCP Core Configuration
+GCP_PROJECT_ID="htx-trading-platform"
+GCP_REGION="us-central1"
+GOOGLE_APPLICATION_CREDENTIALS="/path/to/htx-trading-sa-key.json"
+
+# Cloud Storage Configuration
+GCP_STORAGE_BUCKET="htx-trading-data"
+GCP_STORAGE_TEMP_BUCKET="htx-trading-temp"
+GCP_STORAGE_UPLOAD_PREFIX="uploads/"
+GCP_STORAGE_PROCESSED_PREFIX="processed/"
+
+# Pub/Sub Topics Configuration
+PUBSUB_TRADE_INGESTED_TOPIC="trade-ingested"
+PUBSUB_PARSING_COMPLETED_TOPIC="parsing-completed"
+PUBSUB_MODEL_INFERENCE_TOPIC="model-inference"
+PUBSUB_HTX_SYNC_TOPIC="htx-sync-completed"
+
+# BigQuery Configuration
+BIGQUERY_DATASET="trading_analytics"
+BIGQUERY_TRADES_TABLE="trades"
+BIGQUERY_DEPOSITS_TABLE="deposits"
+BIGQUERY_WITHDRAWALS_TABLE="withdrawals"
+BIGQUERY_PREDICTIONS_TABLE="ml_predictions"
+
+# Vertex AI Configuration
+VERTEX_AI_LOCATION="us-central1"
+VERTEX_AI_STAGING_BUCKET="htx-ml-staging"
+VERTEX_AI_MODEL_DISPLAY_NAME="htx-trading-model"
+
+# Cloud Scheduler Configuration
+SCHEDULER_LOCATION="us-central1"
+SCHEDULER_TIME_ZONE="UTC"
+SCHEDULER_HTX_SYNC_SCHEDULE="0 */1 * * *"
+SCHEDULER_DATAFLOW_SCHEDULE="0 2 * * *"
+SCHEDULER_MODEL_RETRAIN_SCHEDULE="0 0 * * 0"
+```
+
+### 2. Validate Configuration
+```bash
+# Test GCP authentication
+gcloud auth application-default login
+
+# Verify service account access
+gcloud auth activate-service-account $SA_EMAIL \
+  --key-file=~/.config/gcp/htx-trading-sa-key.json
+
+# Test API access
+gcloud storage ls  # Should list accessible buckets
+```
+
+---
+
+## 🛠️ Service-Specific Setup
+
+### Cloud Storage Setup
+```bash
+# Create main storage bucket
+gsutil mb -l us-central1 gs://htx-trading-data
+
+# Create temporary bucket
+gsutil mb -l us-central1 gs://htx-trading-temp
+
+# Create ML staging bucket
+gsutil mb -l us-central1 gs://htx-ml-staging
+
+# Set bucket policies (optional)
+gsutil iam ch serviceAccount:$SA_EMAIL:roles/storage.admin gs://htx-trading-data
+```
+
+### Pub/Sub Setup
+```bash
+# Create topics
+gcloud pubsub topics create trade-ingested
+gcloud pubsub topics create parsing-completed
+gcloud pubsub topics create model-inference
+gcloud pubsub topics create htx-sync-completed
+
+# Create subscriptions (optional, for testing)
+gcloud pubsub subscriptions create trade-ingested-sub \
+  --topic=trade-ingested
+
+gcloud pubsub subscriptions create parsing-completed-sub \
+  --topic=parsing-completed
+```
+
+### BigQuery Setup
+```bash
+# Create dataset
+bq mk --location=US trading_analytics
+
+# Create tables
+bq mk trading_analytics.trades
+bq mk trading_analytics.deposits
+bq mk trading_analytics.withdrawals
+bq mk trading_analytics.ml_predictions
+```
+
+### Secret Manager Setup
+```bash
+# Store HTX API credentials (replace with actual values)
+echo -n "your-htx-api-key" | gcloud secrets create htx-api-key --data-file=-
+echo -n "your-htx-api-secret" | gcloud secrets create htx-api-secret --data-file=-
+
+# Store OpenAI API key
+echo -n "your-openai-api-key" | gcloud secrets create openai-api-key --data-file=-
+
+# Verify secrets
+gcloud secrets list
+```
+
+---
+
+## 📚 API Documentation
+
+### Health Check Endpoints
+
+#### Get GCP Services Health
+```http
+GET /api/v1/gcp/health
+```
+
+**Response:**
+```json
+[
+  {
+    "service": "storage",
+    "available": true,
+    "configured": true,
+    "error": null
+  },
+  {
+    "service": "pubsub",
+    "available": true,
+    "configured": true,
+    "error": null
+  }
+]
+```
+
+### Cloud Storage Endpoints
+
+#### Upload File
+```http
+POST /api/v1/gcp/storage/upload
+Content-Type: multipart/form-data
+
+file: <binary_file>
+blob_name: "trades/2024/01/trades.csv"
+content_type: "text/csv"
+```
+
+**Response:**
+```json
+{
+  "blob_name": "trades/2024/01/trades.csv",
+  "gs_uri": "gs://htx-trading-data/trades/2024/01/trades.csv",
+  "upload_time": "2024-01-15T10:30:00Z",
+  "size_bytes": 1048576
+}
+```
+
+#### List Files
+```http
+GET /api/v1/gcp/storage/files?prefix=uploads/&max_results=100
+```
+
+#### Delete File
+```http
+DELETE /api/v1/gcp/storage/files/uploads/old-file.csv
+```
+
+#### Generate Signed URL
+```http
+GET /api/v1/gcp/storage/signed-url/file.csv?expiration_minutes=60
+```
+
+### Pub/Sub Endpoints
+
+#### Publish Message
+```http
+POST /api/v1/gcp/pubsub/publish
+Content-Type: application/json
+
+{
+  "topic_name": "trade-ingested",
+  "data": {
+    "event": "trade_completed",
+    "symbol": "BTC-USDT",
+    "amount": 0.1,
+    "price": 45000
+  },
+  "attributes": {
+    "source": "htx-api",
+    "priority": "high"
+  }
+}
+```
+
+#### Create Topic
+```http
+POST /api/v1/gcp/pubsub/topics/new-topic-name
+```
+
+#### List Topics
+```http
+GET /api/v1/gcp/pubsub/topics
+```
+
+### Secret Manager Endpoints
+
+#### Create Secret
+```http
+POST /api/v1/gcp/secrets
+Content-Type: application/json
+
+{
+  "secret_name": "api-key-production",
+  "secret_value": "super-secret-key",
+  "labels": {
+    "env": "production",
+    "service": "htx"
+  }
+}
+```
+
+#### Get Secret (returns metadata only)
+```http
+GET /api/v1/gcp/secrets/api-key-production?version=latest
+```
+
+#### List Secrets
+```http
+GET /api/v1/gcp/secrets
+```
+
+#### Delete Secret
+```http
+DELETE /api/v1/gcp/secrets/old-api-key
+```
+
+### Vertex AI Endpoints
+
+#### Create Training Job
+```http
+POST /api/v1/gcp/ml/training-jobs
+Content-Type: application/json
+
+{
+  "display_name": "htx-trading-model-v1",
+  "container_image_uri": "gcr.io/project/training:latest",
+  "model_serving_container_image_uri": "gcr.io/project/serving:latest",
+  "machine_type": "n1-standard-4",
+  "replica_count": 1,
+  "environment_variables": {
+    "EPOCHS": "100",
+    "LEARNING_RATE": "0.001"
+  }
+}
+```
+
+#### List Training Jobs
+```http
+GET /api/v1/gcp/ml/training-jobs?filter_expression=state=JOB_STATE_SUCCEEDED
+```
+
+#### Make Prediction
+```http
+POST /api/v1/gcp/ml/predict
+Content-Type: application/json
+
+{
+  "endpoint_name": "projects/project/locations/us-central1/endpoints/123",
+  "instances": [
+    {
+      "price": 45000,
+      "volume": 0.1,
+      "rsi": 65.5
+    }
+  ]
+}
+```
+
+#### List Models
+```http
+GET /api/v1/gcp/ml/models
+```
+
+### Cloud Scheduler Endpoints
+
+#### Create HTTP Job
+```http
+POST /api/v1/gcp/scheduler/http-jobs
+Content-Type: application/json
+
+{
+  "job_name": "htx-hourly-sync",
+  "schedule": "0 */1 * * *",
+  "target_uri": "https://api.yourdomain.com/sync",
+  "http_method": "POST",
+  "headers": {
+    "Authorization": "Bearer token",
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "sync_type": "hourly"
+  },
+  "description": "Hourly HTX data synchronization"
+}
+```
+
+#### Create Pub/Sub Job
+```http
+POST /api/v1/gcp/scheduler/pubsub-jobs
+Content-Type: application/json
+
+{
+  "job_name": "daily-processing",
+  "schedule": "0 2 * * *",
+  "topic_name": "daily-processing",
+  "data": {
+    "type": "daily_batch",
+    "date": "2024-01-15"
+  },
+  "attributes": {
+    "source": "scheduler",
+    "priority": "medium"
+  }
+}
+```
+
+#### List Jobs
+```http
+GET /api/v1/gcp/scheduler/jobs
+```
+
+#### Pause/Resume/Run Job
+```http
+POST /api/v1/gcp/scheduler/jobs/job-name/pause
+POST /api/v1/gcp/scheduler/jobs/job-name/resume
+POST /api/v1/gcp/scheduler/jobs/job-name/run
+```
+
+#### Delete Job
+```http
+DELETE /api/v1/gcp/scheduler/jobs/old-job
+```
+
+---
+
+## 🧪 Testing and Validation
+
+### 1. Install Dependencies
+```bash
+# Install GCP client libraries
+pip install -r requirements.txt
+
+# Install development dependencies
+pip install -r requirements-dev.txt
+```
+
+### 2. Run Unit Tests
+```bash
+# Run GCP integration tests
+pytest backend/tests/test_gcp_integrations.py -v
+
+# Run performance tests
+pytest backend/tests/test_gcp_performance.py -v
+
+# Run all tests with coverage
+pytest --cov=app.services.gcp --cov-report=html
+```
+
+### 3. Manual API Testing
+```bash
+# Start the development server
+cd backend && python -m uvicorn app.main:app --reload --port 8004
+
+# Test health endpoint
+curl http://localhost:8004/api/v1/gcp/health
+
+# Test storage upload
+curl -X POST \
+  -F "file=@test-file.csv" \
+  -F "blob_name=test/test-file.csv" \
+  http://localhost:8004/api/v1/gcp/storage/upload
+
+# Test Pub/Sub message
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"topic_name":"test-topic","data":{"test":"message"}}' \
+  http://localhost:8004/api/v1/gcp/pubsub/publish
+```
+
+### 4. Performance Testing
+```bash
+# Run comprehensive performance tests
+python backend/tests/test_gcp_performance.py
+
+# Load test specific endpoints
+ab -n 100 -c 10 http://localhost:8004/api/v1/gcp/health
+```
+
+---
+
+## ⚡ Performance Optimization
+
+### 1. Connection Pooling
+```python
+# Configure client connection pooling
+from google.cloud import storage
+
+# Use custom client configuration
+client = storage.Client(
+    project=project_id,
+    # Add connection pooling settings
+)
+```
+
+### 2. Caching Strategy
+```python
+# Implement caching for frequently accessed data
+import asyncio
+from functools import lru_cache
+
+@lru_cache(maxsize=128)
+async def get_cached_secret(secret_name: str) -> str:
+    # Cache secrets for 1 hour
+    return await secret_manager.get_secret(secret_name)
+```
+
+### 3. Batch Operations
+```python
+# Batch multiple operations together
+async def batch_upload_files(files: List[str]):
+    tasks = []
+    semaphore = asyncio.Semaphore(5)  # Limit concurrency
+    
+    for file_path in files:
+        task = upload_with_semaphore(semaphore, file_path)
+        tasks.append(task)
+    
+    return await asyncio.gather(*tasks)
+```
+
+### 4. Monitoring and Alerting
+```python
+# Add monitoring for key metrics
+import logging
+import time
+from functools import wraps
+
+def monitor_performance(operation_name: str):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            start_time = time.time()
+            try:
+                result = await func(*args, **kwargs)
+                duration = time.time() - start_time
+                logging.info(f"{operation_name} completed in {duration:.2f}s")
+                return result
+            except Exception as e:
+                duration = time.time() - start_time
+                logging.error(f"{operation_name} failed after {duration:.2f}s: {e}")
+                raise
+        return wrapper
+    return decorator
+```
+
+---
+
+## 🔍 Troubleshooting
+
+### Common Issues and Solutions
+
+#### 1. Authentication Errors
+```bash
+# Error: "Application Default Credentials are not available"
+# Solution: Set environment variable
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
+
+# Or use gcloud authentication
+gcloud auth application-default login
+```
+
+#### 2. Permission Denied Errors
+```bash
+# Error: "Permission denied on resource"
+# Solution: Check IAM roles
+gcloud projects get-iam-policy $PROJECT_ID
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$SA_EMAIL" \
+  --role="roles/required.role"
+```
+
+#### 3. API Not Enabled
+```bash
+# Error: "API has not been used in project"
+# Solution: Enable the required API
+gcloud services enable apiname.googleapis.com
+```
+
+#### 4. Quota Exceeded
+```bash
+# Error: "Quota exceeded"
+# Solution: Check and increase quotas
+gcloud compute project-info describe --project=$PROJECT_ID
+# Contact Google Cloud Support for quota increases
+```
+
+#### 5. Network Connectivity Issues
+```bash
+# Test connectivity to GCP services
+curl -I https://storage.googleapis.com
+curl -I https://pubsub.googleapis.com
+
+# Check firewall rules
+gcloud compute firewall-rules list
+```
+
+### Debug Mode
+```python
+# Enable debug logging for GCP clients
+import logging
+logging.getLogger('google.cloud').setLevel(logging.DEBUG)
+
+# Enable HTTP request logging
+import httpx
+logging.getLogger('httpx').setLevel(logging.DEBUG)
+```
+
+---
+
+## 🔒 Security Best Practices
+
+### 1. Service Account Security
+```bash
+# Principle of least privilege
+# Only grant minimum required permissions
+
+# Rotate service account keys regularly
+gcloud iam service-accounts keys create new-key.json \
+  --iam-account=$SA_EMAIL
+
+# Delete old keys
+gcloud iam service-accounts keys delete OLD_KEY_ID \
+  --iam-account=$SA_EMAIL
+```
+
+### 2. Secret Management
+```bash
+# Store sensitive data in Secret Manager
+# Never commit secrets to version control
+
+# Use secret versioning
+gcloud secrets versions list htx-api-key
+
+# Set up secret rotation
+gcloud secrets create htx-api-key --rotation-period=90d
+```
+
+### 3. Network Security
+```bash
+# Use VPC for network isolation
+gcloud compute networks create htx-vpc --subnet-mode=custom
+
+# Configure firewall rules
+gcloud compute firewall-rules create allow-htx-internal \
+  --network=htx-vpc \
+  --allow=tcp:8004 \
+  --source-ranges=10.0.0.0/8
+```
+
+### 4. Data Encryption
+```bash
+# Enable Customer-Managed Encryption Keys (CMEK)
+gcloud kms keyrings create htx-keyring --location=global
+gcloud kms keys create htx-storage-key \
+  --location=global \
+  --keyring=htx-keyring \
+  --purpose=encryption
+```
+
+### 5. Audit Logging
+```bash
+# Enable audit logs
+gcloud logging sinks create htx-audit-sink \
+  bigquery.googleapis.com/projects/$PROJECT_ID/datasets/audit_logs \
+  --log-filter='protoPayload.serviceName="storage.googleapis.com"'
+```
+
+---
+
+## 📞 Support and Resources
+
+### Documentation Links
+- [Cloud Storage Documentation](https://cloud.google.com/storage/docs)
+- [Pub/Sub Documentation](https://cloud.google.com/pubsub/docs)
+- [Secret Manager Documentation](https://cloud.google.com/secret-manager/docs)
+- [Vertex AI Documentation](https://cloud.google.com/vertex-ai/docs)
+- [Cloud Scheduler Documentation](https://cloud.google.com/scheduler/docs)
+
+### Monitoring and Logging
+- [Cloud Monitoring](https://cloud.google.com/monitoring)
+- [Cloud Logging](https://cloud.google.com/logging)
+- [Error Reporting](https://cloud.google.com/error-reporting)
+
+### Cost Management
+- [Cloud Billing](https://cloud.google.com/billing/docs)
+- [Cost Management](https://cloud.google.com/cost-management)
+
+---
+
+## 📝 Quick Start Checklist
+
+- [ ] Create GCP project and enable APIs
+- [ ] Create service account and assign IAM roles
+- [ ] Generate and secure service account key
+- [ ] Update environment configuration
+- [ ] Create Cloud Storage buckets
+- [ ] Set up Pub/Sub topics
+- [ ] Configure BigQuery dataset
+- [ ] Store secrets in Secret Manager
+- [ ] Test authentication and API access
+- [ ] Run integration tests
+- [ ] Deploy and monitor
+
+---
+
+**Note:** This guide assumes you have appropriate permissions and billing configured in your GCP account. Always follow your organization's security and compliance policies when implementing cloud integrations.
+
+For additional support, consult the official GCP documentation or contact your cloud administrator.

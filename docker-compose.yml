@@ -1,34 +1,102 @@
-version: "3.9"
+# HTX Trading Platform - Optimized Docker Compose for Development
 services:
+  # Main API Service
   api:
-    build: ./backend
+    build: 
+      context: ./backend
+      target: production
+    container_name: htx-api
     env_file: ./backend/.env
+    environment:
+      - ENV=docker
+      - DATABASE_URL=sqlite+aiosqlite:///./data/app.db
+      - REDIS_URL=redis://redis:6379
     volumes:
       - ./data:/app/data
+      - ./logs:/app/logs
     ports:
       - "8000:8000"
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      - redis
+    networks:
+      - htx-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    # Resource limits for development
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
-  # Postgres на будущее (если уйдём от SQLite)
-  # db:
-  #   image: postgres:16
-  #   environment:
-  #     POSTGRES_DB: htx
-  #     POSTGRES_USER: htx
-  #     POSTGRES_PASSWORD: htx
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
+  # Frontend Service
+  frontend:
+    build: 
+      context: ./frontend
+      target: production
+    container_name: htx-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - htx-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    # Resource limits for development
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
-  # Redis для фоновых задач (опционально)
-  # redis:
-  #   image: redis:7-alpine
-  #   ports:
-  #     - "6379:6379"
-  #   volumes:
-  #     - redis_data:/data
+  # Redis for caching and background tasks
+  redis:
+    image: redis:7-alpine
+    container_name: htx-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - htx-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Resource limits for Redis
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
-# volumes:
-#   pgdata:
-#   redis_data:
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  htx-network:
+    driver: bridge

@@ -55,11 +55,21 @@ class FileParser:
     async def parse_csv_file(self, file_path: str) -> Dict[str, pd.DataFrame]:
         """Parse CSV file and return structured data"""
         try:
-            df = pd.read_csv(file_path)
+            # Use basic read_csv without problematic features
+            df = pd.read_csv(file_path, engine='python')
             return await self._process_dataframe(df, file_path)
         except Exception as e:
             logger.error(f"Failed to parse CSV file {file_path}: {e}")
-            raise
+            # Try alternative approach
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                import io
+                df = pd.read_csv(io.StringIO(content))
+                return await self._process_dataframe(df, file_path)
+            except Exception as e2:
+                logger.error(f"Alternative CSV parsing also failed: {e2}")
+                raise e
     
     async def parse_excel_file(self, file_path: str) -> Dict[str, pd.DataFrame]:
         """Parse Excel file and return structured data"""

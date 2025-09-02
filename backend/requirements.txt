@@ -40,6 +40,36 @@ APScheduler>=3.10
 passlib[bcrypt]>=1.7
 python-jose[cryptography]>=3.3
 
+# OpenAI & ML Integration
+openai>=1.30
+scikit-learn>=1.5
+xgboost>=2.1
+torch>=2.3
+transformers>=4.42
+# automl-gpu>=0.3         # for AutoML planning (package not available)
+
+# Vector Database & Embeddings
+pgvector>=0.3
+numpy>=1.26
+scipy>=1.13
+faiss-cpu>=1.8          # alternative vector search
+
+# Google Cloud Platform Integration
+google-cloud-storage>=2.10.0
+google-cloud-pubsub>=2.18.4
+google-cloud-secret-manager>=2.16.4
+google-cloud-scheduler>=2.13.4
+google-cloud-bigquery>=3.11.4
+google-cloud-aiplatform>=1.38.1
+apache-beam[gcp]>=2.50.0
+google-auth>=2.23.4
+google-cloud-logging>=3.8.0
+
+# Time Series & Advanced Analytics
+statsmodels>=0.14
+plotly>=5.22            # interactive charts
+seaborn>=0.13
+
 # Testing & quality (минимум)
 pytest>=8.3
 pytest-asyncio>=0.23

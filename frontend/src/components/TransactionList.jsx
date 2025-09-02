@@ -13,7 +13,7 @@ const TransactionList = forwardRef(({ type }, ref) => {
 
   const loadData = () => {
     setLoading(true);
-    fetch(`http://localhost:8004${endpointMap[type]}?limit=20`)
+    fetch(`http://localhost:8000${endpointMap[type]}?limit=20`)
       .then((res) => res.json())
       .then((res) => {
         if (type === 'deposit') setData(res.deposits || []);

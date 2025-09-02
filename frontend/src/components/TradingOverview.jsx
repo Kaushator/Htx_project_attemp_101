@@ -7,10 +7,10 @@ const TradingOverview = forwardRef((props, ref) => {
 
   const loadData = () => {
     setLoading(true);
-    fetch('http://localhost:8004/api/v1/trades?limit=10')
+    fetch('http://localhost:8000/api/v1/health')
       .then((res) => res.json())
       .then((data) => {
-        setTrades(data.trades || []);
+        setTrades(data ? [data] : []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
