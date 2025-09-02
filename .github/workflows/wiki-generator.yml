@@ -1,0 +1,79 @@
+name: Generate Wiki Documentation
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'docs/**'
+      - 'README.md'
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  generate-wiki:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Setup Node.js 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install Python dependencies
+      run: |
+        pip install -r requirements-dev.txt
+        pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin
+        
+    - name: Install documentation tools
+      run: |
+        pip install pydoc-markdown fastapi[all] jinja2
+        
+    - name: Generate API documentation
+      run: |
+        python scripts/generate_wiki.py
+        
+    - name: Build MkDocs site
+      run: |
+        mkdocs build
+        
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./site
+        
+    - name: Update Wiki
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      run: |
+        git config --global user.name 'Wiki Bot'
+        git config --global user.email 'bot@htx-project.com'
+        
+        # Clone wiki repository
+        git clone https://github.com/${{ github.repository }}.wiki.git wiki-repo
+        
+        # Copy generated documentation
+        cp -r docs/* wiki-repo/ || true
+        
+        # Push to wiki
+        cd wiki-repo
+        git add .
+        if ! git diff --cached --exit-code; then
+          git commit -m "Auto-update wiki documentation - $(date)"
+          git push origin master
+        fi
