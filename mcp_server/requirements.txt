@@ -1,0 +1,35 @@
+# HTX Analytics Platform MCP Server Dependencies
+
+# Core MCP framework
+mcp>=1.0.0
+
+# Async support
+asyncio-mqtt>=0.11.0
+aiofiles>=23.0.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+python-dateutil>=2.8.0
+
+# HTTP client for external APIs
+httpx>=0.24.0
+aiohttp>=3.8.0
+
+# JSON handling
+orjson>=3.8.0
+
+# Logging and monitoring
+structlog>=23.0.0
+
+# Optional: AI and ML capabilities (if HTX backend services available)
+# openai>=1.35.0
+# scikit-learn>=1.3.0
+# pandas-ta>=0.3.14b
+
+# Development and testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0

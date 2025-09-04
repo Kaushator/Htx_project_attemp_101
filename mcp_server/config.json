@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "htx-analytics-platform": {
+      "command": "python",
+      "args": [
+        "-m",
+        "mcp_server"
+      ],
+      "cwd": "E:/Htx_project_attemp_101",
+      "env": {
+        "PYTHONPATH": "E:/Htx_project_attemp_101"
+      }
+    }
+  }
+}

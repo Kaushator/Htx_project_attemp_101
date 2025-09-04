@@ -110,3 +110,12 @@ celerybeat.pid
 .mypy_cache/
 .dmypy.json
 dmypy.json
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Docker volumes
+postgres_data/
+redis_data/
