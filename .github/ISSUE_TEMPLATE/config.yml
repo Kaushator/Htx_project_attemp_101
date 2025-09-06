@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Security Vulnerability (Private)
+    url: mailto:security@htx-analytics.com
+    about: Report security vulnerabilities privately (if email not available, use Security Issue template with caution)
+  - name: 💬 Discussions
+    url: https://github.com/Kaushator/Htx_project_attemp_101/discussions
+    about: Ask questions, share ideas, and discuss with the community
+  - name: 📚 Documentation
+    url: https://github.com/Kaushator/Htx_project_attemp_101/tree/copilot-refactor/docs
+    about: Read the comprehensive documentation before asking questions
+  - name: 🚀 Development Guide
+    url: https://github.com/Kaushator/Htx_project_attemp_101/blob/copilot-refactor/docs/DEVELOPMENT.md
+    about: Setup and development instructions for contributors

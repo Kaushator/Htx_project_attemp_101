@@ -1,0 +1,144 @@
+# HTX Trading Analytics Platform - Code Owners
+# 
+# This file defines who owns different parts of the codebase.
+# Code owners are automatically requested for review when someone 
+# opens a pull request that modifies code that they own.
+#
+# Order is important; the last matching pattern takes the most precedence.
+# More specific patterns override less specific patterns.
+
+# Global fallback - all files
+* @Kaushator
+
+# Documentation
+*.md @Kaushator
+docs/ @Kaushator
+.github/ @Kaushator
+
+# Root configuration files
+/.gitignore @Kaushator
+/LICENSE @Kaushator
+/README.md @Kaushator
+/CHANGELOG.md @Kaushator
+/SECURITY.md @Kaushator
+/Makefile @Kaushator
+/docker-compose.yml @Kaushator
+/.pre-commit-config.yaml @Kaushator
+
+# GitHub specific files
+/.github/ @Kaushator
+/.github/workflows/ @Kaushator
+/.github/ISSUE_TEMPLATE/ @Kaushator
+/.github/PULL_REQUEST_TEMPLATE.md @Kaushator
+/.github/CODEOWNERS @Kaushator
+
+# Backend Python code
+/backend/ @Kaushator
+/backend/app/ @Kaushator
+/backend/requirements*.txt @Kaushator
+/backend/pyproject.toml @Kaushator
+/backend/Dockerfile @Kaushator
+
+# Backend core components (require extra review)
+/backend/app/core/ @Kaushator
+/backend/app/db/ @Kaushator
+/backend/app/models/ @Kaushator
+/backend/app/main.py @Kaushator
+
+# API endpoints
+/backend/app/api/ @Kaushator
+/backend/app/schemas/ @Kaushator
+
+# Services and business logic
+/backend/app/services/ @Kaushator
+
+# Database migrations (require careful review)
+/backend/alembic/ @Kaushator
+/backend/alembic.ini @Kaushator
+
+# Tests
+/backend/tests/ @Kaushator
+
+# Frontend React code
+/frontend/ @Kaushator
+/frontend/src/ @Kaushator
+/frontend/package*.json @Kaushator
+/frontend/Dockerfile @Kaushator
+
+# Frontend core components
+/frontend/src/components/ @Kaushator
+/frontend/src/pages/ @Kaushator
+/frontend/src/hooks/ @Kaushator
+
+# Frontend configuration
+/frontend/vite.config.js @Kaushator
+/frontend/tailwind.config.js @Kaushator
+/frontend/.eslintrc.* @Kaushator
+/frontend/prettier.config.js @Kaushator
+
+# Security-sensitive files (require security review)
+/backend/app/core/security.py @Kaushator
+/backend/app/core/config.py @Kaushator
+/backend/env.example @Kaushator
+/.github/workflows/security.yml @Kaushator
+/SECURITY.md @Kaushator
+
+# CI/CD and deployment
+/.github/workflows/ @Kaushator
+/backend/Dockerfile @Kaushator
+/frontend/Dockerfile @Kaushator
+/docker-compose*.yml @Kaushator
+/scripts/ @Kaushator
+
+# Configuration files that affect the entire project
+/pyproject.toml @Kaushator
+/.pre-commit-config.yaml @Kaushator
+/.markdownlint.json @Kaushator
+/.gitignore @Kaushator
+
+# Legacy code (should be reviewed before changes)
+/htx_project/ @Kaushator
+
+# Tooling and development scripts
+/scripts/ @Kaushator
+/journal_roadmap/ @Kaushator
+
+# Specific high-impact files requiring multiple reviews
+/backend/app/main.py @Kaushator
+/README.md @Kaushator
+/docs/ARCHITECTURE.md @Kaushator
+/docs/CONTRIBUTING.md @Kaushator
+
+# Performance-critical code
+/backend/app/services/pnl.py @Kaushator
+/backend/app/services/parser_csv.py @Kaushator
+
+# External integrations
+/backend/app/services/htx_client.py @Kaushator
+/backend/app/services/threecommas.py @Kaushator
+
+# Database models and schemas
+/backend/app/models/ @Kaushator
+/backend/app/schemas/ @Kaushator
+
+# API routes
+/backend/app/api/v1/endpoints/ @Kaushator
+
+# Release and versioning
+/CHANGELOG.md @Kaushator
+/.github/workflows/release.yml @Kaushator
+
+# Security and compliance
+/.github/workflows/code-quality.yml @Kaushator
+/.github/workflows/security.yml @Kaushator
+/backend/app/core/security.py @Kaushator
+
+# Team-specific ownership (when team grows)
+# /backend/app/services/analytics/ @analytics-team
+# /backend/app/services/integrations/ @integrations-team
+# /frontend/src/components/charts/ @frontend-team
+# /docs/ @docs-team
+
+# Special files requiring founder approval
+/LICENSE @Kaushator
+/.github/CODEOWNERS @Kaushator
