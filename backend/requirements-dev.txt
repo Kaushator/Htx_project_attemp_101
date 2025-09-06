@@ -1,7 +1,32 @@
 -e .
+
+# Testing
 pytest
 pytest-asyncio
+pytest-cov
+pytest-benchmark
 httpx[http2]
+
+# Code Quality
 ruff
 black
 isort
+mypy
+flake8
+flake8-docstrings
+flake8-import-order
+flake8-bugbear
+
+# Security
+bandit[toml]
+safety
+pip-audit
+
+# Documentation
+interrogate
+
+# Code Analysis
+radon
+
+# Pre-commit
+pre-commit

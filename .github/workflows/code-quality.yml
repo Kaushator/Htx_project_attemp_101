@@ -1,0 +1,368 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [copilot-refactor, main]
+  pull_request:
+    branches: [copilot-refactor, main]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  PYTHON_VERSION: "3.10"
+  NODE_VERSION: "18"
+
+jobs:
+  # Python code quality checks
+  python-quality:
+    name: Python Code Quality
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Code formatting check with Black
+        run: |
+          black --check --diff .
+          echo "✅ Black formatting check passed"
+
+      - name: Import sorting check with isort
+        run: |
+          isort --check-only --diff .
+          echo "✅ isort import sorting check passed"
+
+      - name: Linting with Ruff
+        run: |
+          ruff check . --output-format=github
+          echo "✅ Ruff linting check passed"
+
+      - name: Type checking with mypy
+        run: |
+          mypy . --show-error-codes --show-error-context || true
+          echo "⚠️ mypy type checking completed (warnings allowed)"
+
+      - name: Security check with Bandit
+        run: |
+          pip install bandit[toml]
+          bandit -r . -f json -o bandit-report.json || true
+          bandit -r . -f txt
+          echo "🔒 Bandit security check completed"
+
+      - name: Dependency security check with Safety
+        run: |
+          safety check -r requirements.txt --json --output safety-report.json || true
+          safety check -r requirements.txt
+          echo "🛡️ Safety dependency check completed"
+
+      - name: Code complexity check with Radon
+        run: |
+          pip install radon
+          radon cc . --min B --show-complexity
+          radon mi . --min B
+          echo "📊 Radon complexity check completed"
+
+      - name: Documentation coverage check
+        run: |
+          pip install interrogate
+          interrogate . --generate-badge interrogate_badge.svg
+          interrogate .
+          echo "📚 Documentation coverage check completed"
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: python-security-reports
+          path: |
+            backend/bandit-report.json
+            backend/safety-report.json
+            backend/interrogate_badge.svg
+
+  # JavaScript/TypeScript code quality checks  
+  javascript-quality:
+    name: JavaScript Code Quality
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Code formatting check with Prettier
+        run: |
+          npm run format:check
+          echo "✅ Prettier formatting check passed"
+
+      - name: Linting with ESLint
+        run: |
+          npm run lint -- --format=@microsoft/eslint-formatter-sarif --output-file=eslint-results.sarif || true
+          npm run lint
+          echo "✅ ESLint linting check completed"
+
+      - name: Type checking with TypeScript
+        run: |
+          npm run type-check || true
+          echo "⚠️ TypeScript type checking completed (warnings allowed)"
+
+      - name: Bundle size analysis
+        run: |
+          npm run build
+          npx bundlesize
+          echo "📦 Bundle size analysis completed"
+
+      - name: Dependency audit
+        run: |
+          npm audit --audit-level=moderate --json > npm-audit-report.json || true
+          npm audit --audit-level=moderate
+          echo "🔍 npm audit completed"
+
+      - name: Upload quality reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: javascript-quality-reports
+          path: |
+            frontend/eslint-results.sarif
+            frontend/npm-audit-report.json
+
+  # Documentation quality check
+  docs-quality:
+    name: Documentation Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check Markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          config-file: '.github/markdown-link-config.json'
+
+      - name: Lint Markdown files
+        uses: articulate/actions-markdownlint@v1
+        with:
+          config: .markdownlint.json
+          files: '**/*.md'
+          ignore: 'node_modules'
+
+      - name: Check spelling
+        uses: streetsidesoftware/cspell-action@v5
+        with:
+          files: |
+            **/*.md
+            **/*.py
+            **/*.js
+            **/*.jsx
+            **/*.ts
+            **/*.tsx
+          incremental_files_only: false
+
+  # SAST (Static Application Security Testing)
+  sast-scan:
+    name: SAST Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python, javascript
+          queries: security-extended,security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      - name: Semgrep SAST
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/python
+            p/javascript
+          generateSarif: "1"
+
+      - name: Upload Semgrep results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+
+  # Dependency analysis
+  dependency-analysis:
+    name: Dependency Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Dependency Review
+        uses: actions/dependency-review-action@v3
+        if: github.event_name == 'pull_request'
+
+      - name: Python dependency check
+        working-directory: ./backend
+        run: |
+          pip install pip-audit
+          pip-audit --desc --format=json --output=pip-audit-report.json || true
+          pip-audit --desc
+          echo "🐍 Python dependency audit completed"
+
+      - name: JavaScript dependency check
+        working-directory: ./frontend
+        run: |
+          npm audit --json > npm-audit-detailed.json || true
+          npm audit
+          echo "📦 JavaScript dependency audit completed"
+
+      - name: License compliance check
+        uses: fossa-contrib/fossa-action@v2
+        with:
+          api-key: ${{ secrets.FOSSA_API_KEY }}
+        continue-on-error: true
+
+      - name: Upload dependency reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: dependency-reports
+          path: |
+            backend/pip-audit-report.json
+            frontend/npm-audit-detailed.json
+
+  # Performance analysis
+  performance-analysis:
+    name: Performance Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest-benchmark
+
+      - name: Run performance benchmarks
+        working-directory: ./backend
+        run: |
+          pytest tests/performance/ --benchmark-json=benchmark-results.json || true
+          echo "🚀 Performance benchmarks completed"
+
+      - name: Frontend build performance
+        working-directory: ./frontend
+        run: |
+          npm ci
+          # Measure build time
+          time npm run build
+          # Analyze bundle
+          npx webpack-bundle-analyzer dist/static/js/*.js --report --mode static --report-filename bundle-report.html
+          echo "📊 Frontend build analysis completed"
+
+      - name: Upload performance reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: performance-reports
+          path: |
+            backend/benchmark-results.json
+            frontend/bundle-report.html
+
+  # Code quality summary
+  quality-summary:
+    name: Quality Summary
+    runs-on: ubuntu-latest
+    needs: [python-quality, javascript-quality, docs-quality, sast-scan, dependency-analysis]
+    if: always()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate quality summary
+        run: |
+          echo "# Code Quality Summary" > quality-summary.md
+          echo "" >> quality-summary.md
+          echo "## Status Overview" >> quality-summary.md
+          echo "- Python Quality: ${{ needs.python-quality.result }}" >> quality-summary.md
+          echo "- JavaScript Quality: ${{ needs.javascript-quality.result }}" >> quality-summary.md
+          echo "- Documentation Quality: ${{ needs.docs-quality.result }}" >> quality-summary.md
+          echo "- Security Scan: ${{ needs.sast-scan.result }}" >> quality-summary.md
+          echo "- Dependency Analysis: ${{ needs.dependency-analysis.result }}" >> quality-summary.md
+          echo "" >> quality-summary.md
+          echo "## Generated Reports" >> quality-summary.md
+          echo "- Security reports available in artifacts" >> quality-summary.md
+          echo "- Quality reports available in artifacts" >> quality-summary.md
+          
+          cat quality-summary.md
+
+      - name: Comment quality summary on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('quality-summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+      - name: Upload quality summary
+        uses: actions/upload-artifact@v3
+        with:
+          name: quality-summary
+          path: quality-summary.md

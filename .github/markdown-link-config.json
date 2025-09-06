@@ -1,0 +1,31 @@
+{
+  "version": "0.1",
+  "replacements": [
+    {
+      "pattern": "localhost",
+      "global": true
+    }
+  ],
+  "ignorePatterns": [
+    {
+      "pattern": "http://localhost:*"
+    },
+    {
+      "pattern": "https://localhost:*"
+    }
+  ],
+  "httpStatusCodes": [
+    200,
+    401,
+    403,
+    404
+  ],
+  "timeout": "20s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackToGet": false,
+  "aliveStatusCodes": [
+    200,
+    206
+  ]
+}
