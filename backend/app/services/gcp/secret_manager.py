@@ -34,7 +34,7 @@ class SecretManagerClient:
     - Managing secret metadata
     """
     
-    def __init__(self, settings):
+    def __init__(self, settings: Any):
         """
         Initialize the Secret Manager Client with configuration settings.
         
