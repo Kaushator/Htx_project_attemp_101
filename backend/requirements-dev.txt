@@ -5,3 +5,8 @@ httpx[http2]
 ruff
 black
 isort
+
+# GCP Testing & Mocking
+pytest-mock>=3.12
+moto[server]>=4.2  # AWS mocking (some GCP compatible patterns)
+google-cloud-testutils>=1.4  # GCP testing utilities

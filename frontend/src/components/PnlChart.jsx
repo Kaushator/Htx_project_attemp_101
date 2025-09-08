@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 // Пример запроса к API (замените URL на ваш реальный эндпоинт)
 const fetchPnlData = async () => {
   try {
-    const response = await fetch('http://localhost:8004/api/v1/pnl');
+    const response = await fetch('http://localhost:8000/api/v1/pnl');
     if (!response.ok) throw new Error('Ошибка загрузки данных');
     return await response.json();
   } catch (e) {

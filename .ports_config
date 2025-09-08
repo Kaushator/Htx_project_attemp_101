@@ -1,0 +1,16 @@
+# HTX Project - Персональная конфигурация портов
+# Backend: 8004 (FastAPI)
+# Frontend: 3000 (Vite React)
+# Database: SQLite (локальная)
+# Logs: logs/htx_project.log
+
+# ВАЖНО: Эти порты зарезервированы для HTX проекта
+BACKEND_PORT=8004
+FRONTEND_PORT=3000
+API_URL=http://localhost:8004
+FRONTEND_URL=http://localhost:3000
+
+# Переменные окружения
+ENV=production
+DEBUG=false
+ENABLE_BACKGROUND_TASKS=false
