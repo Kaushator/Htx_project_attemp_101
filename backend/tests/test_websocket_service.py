@@ -186,10 +186,15 @@ class TestWebSocketService:
         """Test WebSocket disconnection"""
         await self.ws_service.connect()
         assert self.ws_service.connected is True
+        assert self.ws_service.websocket is not None
+        
+        # Store websocket reference before disconnection
+        websocket = self.ws_service.websocket
         
         await self.ws_service.disconnect()
         assert self.ws_service.connected is False
-        assert self.ws_service.websocket.closed is True
+        assert self.ws_service.websocket is None  # WebSocket should be set to None after disconnect
+        assert websocket.closed is True  # The original websocket should be closed
     
     @pytest.mark.asyncio
     async def test_subscription_management(self):

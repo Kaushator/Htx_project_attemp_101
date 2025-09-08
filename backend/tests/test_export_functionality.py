@@ -275,7 +275,11 @@ class TestFilenameGeneration:
         
         assert filename.startswith("export_")
         assert filename.endswith(".csv")
-        assert len(filename.split("_")[1].split(".")[0]) == 15  # YYYYMMDD_HHMMSS format
+        
+        # Extract the timestamp part (everything between prefix and extension)
+        timestamp_part = filename[len("export_"):-len(".csv")]
+        assert len(timestamp_part) == 15  # YYYYMMDD_HHMMSS format
+        assert "_" in timestamp_part  # Should contain underscore separator
     
     def test_generate_filename_custom_prefix(self):
         """Test filename generation with custom prefix"""
