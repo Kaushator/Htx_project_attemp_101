@@ -54,16 +54,19 @@ class TestSecretsManager:
         assert result is None
     
     @pytest.mark.asyncio
-    async def test_get_secret_success(self):
+    async def test_get_secret_success(self, mock_settings):
         """Test successful secret retrieval"""
-        manager = SecretsManager()
-        manager.base_service = Mock()
-        manager.base_service.client = Mock()
-        manager.base_service.get_secret.return_value = "secret-value"
-        
-        result = await manager.get_secret("test-secret")
-        assert result == "secret-value"
-        manager.base_service.get_secret.assert_called_once_with("test-secret")
+        with patch('app.core.secrets_manager.settings', mock_settings):
+            manager = SecretsManager()
+            
+            # Mock the base service properly
+            mock_service = Mock()
+            mock_service.get_secret.return_value = "secret-value"
+            manager.base_service = mock_service
+            
+            result = await manager.get_secret("test-secret")
+            assert result == "secret-value"
+            mock_service.get_secret.assert_called_once_with("test-secret")
     
     @pytest.mark.asyncio
     async def test_get_secret_exception(self):

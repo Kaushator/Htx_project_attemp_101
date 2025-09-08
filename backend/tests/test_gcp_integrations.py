@@ -10,28 +10,33 @@ import asyncio
 from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from datetime import datetime
 
-from app.core.config import settings
-from app.services.gcp import (
-    StorageClient, PubSubClient, SecretManagerClient, 
-    VertexAIClient, SchedulerClient, GCPServices
-)
+# Import GCP services - handle import errors gracefully for testing
+try:
+    from app.services.gcp.storage_client import StorageClient
+except ImportError:
+    StorageClient = None
+
+try:
+    from app.services.gcp import GCPServices
+except ImportError:
+    GCPServices = None
 
 
 class TestStorageClient:
     """Test suite for Google Cloud Storage client"""
 
     @pytest.fixture
-    def mock_storage_client(self):
+    def mock_storage_client(self, mock_settings):
         """Create a mocked StorageClient for testing"""
         with patch('google.cloud.storage.Client') as mock_client:
-            client = StorageClient(settings)
+            client = StorageClient(mock_settings)
             client._client = mock_client
             client._bucket = MagicMock()
             yield client
 
-    def test_storage_client_initialization(self, mock_storage_client):
+    def test_storage_client_initialization(self, mock_storage_client, mock_settings):
         """Test StorageClient initialization"""
-        assert mock_storage_client.settings == settings
+        assert mock_storage_client.settings == mock_settings
         assert mock_storage_client.is_available
 
     @pytest.mark.asyncio
