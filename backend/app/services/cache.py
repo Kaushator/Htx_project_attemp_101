@@ -239,11 +239,14 @@ class CacheService:
         return total_cleared
 
 
-# Global cache instance
-cache = CacheService()
+# Global cache instance (lazy initialization)
+cache: Optional[CacheService] = None
 
 
 # Dependency for FastAPI
 async def get_cache() -> CacheService:
-    """Dependency to get cache service"""
+    """Dependency to get cache service (lazy initialization)"""
+    global cache
+    if cache is None:
+        cache = CacheService()
     return cache
