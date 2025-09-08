@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "htx-trading": {
+      "command": "python",
+      "args": ["/mnt/e/Htx_project_attemp_101/mcp_server/htx_mcp_server.py"],
+      "cwd": "/mnt/e/Htx_project_attemp_101",
+      "env": {
+        "PYTHONPATH": "/mnt/e/Htx_project_attemp_101/backend"
+      }
+    }
+  }
+}

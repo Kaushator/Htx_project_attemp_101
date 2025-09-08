@@ -55,10 +55,10 @@ async def upload_file(
     if not file.filename:
         raise HTTPException(status_code=400, detail="Filename is required")
     file_ext = Path(str(file.filename)).suffix.lower()
-    if file_ext not in settings.ALLOWED_EXTENSIONS:
+    if file_ext not in settings.allowed_extensions_list:
         raise HTTPException(
             status_code=400,
-            detail=f"File type not allowed. Allowed types: {settings.ALLOWED_EXTENSIONS}"
+            detail=f"File type not allowed. Allowed types: {settings.allowed_extensions_list}"
         )
     
     try:
