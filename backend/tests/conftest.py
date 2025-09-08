@@ -178,7 +178,7 @@ def mock_vertex_ai():
 @pytest.fixture
 def mock_database():
     """Mock database session"""
-    with patch('app.db.get_async_session') as mock_session:
+    with patch('app.db.session.get_async_session') as mock_session:
         session = AsyncMock()
         session.execute.return_value.scalars.return_value.all.return_value = []
         session.commit.return_value = None

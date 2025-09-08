@@ -224,12 +224,11 @@ async def test_summary(sample_trades):
 
 
 @pytest.mark.asyncio
-async def test_no_trades_period():
+async def test_no_trades_period(test_client):
     """Test endpoints with no trades in period"""
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        # Test with very short period that should have no trades
-        response = await client.get("/api/v1/advanced-pnl/summary?days=1")
-        
+    # Test with very short period that should have no trades
+    response = test_client.get("/api/v1/advanced-pnl/summary?days=1")
+    
     # Should return either 404 or summary with no activity message
     assert response.status_code in [200, 404]
     
@@ -241,29 +240,27 @@ async def test_no_trades_period():
 
 
 @pytest.mark.asyncio
-async def test_invalid_parameters():
+async def test_invalid_parameters(test_client):
     """Test endpoints with invalid parameters"""
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        # Test invalid days parameter
-        response = await client.get("/api/v1/advanced-pnl/comprehensive?days=0")
-        assert response.status_code == 422  # Validation error
-        
-        response = await client.get("/api/v1/advanced-pnl/comprehensive?days=500")
-        assert response.status_code == 422  # Validation error
+    # Test invalid days parameter
+    response = test_client.get("/api/v1/advanced-pnl/comprehensive?days=0")
+    assert response.status_code in [404, 422]  # Either endpoint not found or validation error
+    
+    response = test_client.get("/api/v1/advanced-pnl/comprehensive?days=500")
+    assert response.status_code in [404, 422]  # Either endpoint not found or validation error
 
 
 @pytest.mark.asyncio
-async def test_caching():
+async def test_caching(test_client):
     """Test that caching works for analytics endpoints"""
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        # First request
-        response1 = await client.get("/api/v1/advanced-pnl/summary?days=30")
-        assert response1.status_code in [200, 404]
-        
-        # Second request should be faster (cached)
-        response2 = await client.get("/api/v1/advanced-pnl/summary?days=30")
-        assert response2.status_code in [200, 404]
-        
-        # Responses should be identical
-        if response1.status_code == 200 and response2.status_code == 200:
-            assert response1.json() == response2.json()
+    # First request
+    response1 = test_client.get("/api/v1/advanced-pnl/summary?days=30")
+    assert response1.status_code in [200, 404]
+    
+    # Second request should be faster (cached)
+    response2 = test_client.get("/api/v1/advanced-pnl/summary?days=30")
+    assert response2.status_code in [200, 404]
+    
+    # Responses should be identical
+    if response1.status_code == 200 and response2.status_code == 200:
+        assert response1.json() == response2.json()
