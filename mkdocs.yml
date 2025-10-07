@@ -1,0 +1,64 @@
+site_name: HTX Trading Platform Documentation
+site_description: Comprehensive documentation for the HTX trading analytics platform
+site_author: HTX Team
+site_url: https://Kaushator.github.io/Htx_project_attemp_101
+
+repo_name: Htx_project_attemp_101
+repo_url: https://github.com/Kaushator/Htx_project_attemp_101
+
+nav:
+  - Home: index.md
+  - Setup:
+    - Installation: setup/installation.md
+    - Configuration: setup/configuration.md
+  - API Reference:
+    - Overview: api/overview.md
+  - Machine Learning:
+    - Overview: ml/overview.md
+  - Architecture:
+    - Overview: architecture/overview.md
+  - Troubleshooting:
+    - Common Issues: troubleshooting/common-issues.md
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.highlight
+    - search.share
+    - toc.integrate
+
+plugins:
+  - search
+  - mermaid2
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Kaushator/Htx_project_attemp_101
